@@ -16,6 +16,7 @@ import PramaanStatus from './features/pensioner/pramaan/Status';
 import FindPramaanId from './features/pensioner/pramaan/FindId';
 import DownloadDLC from './features/pensioner/pramaan/Download';
 import GeneratePramaan from './features/pensioner/pramaan/Generate';
+import History from './features/pensioner/pramaan/History';
 import Payments from './features/pensioner/payments';
 import Documents from './features/pensioner/documents';
 import Help from './features/pensioner/help';
@@ -52,6 +53,7 @@ export default function App() {
               <Route path="find-id" element={<FindPramaanId />} />
               <Route path="download" element={<DownloadDLC />} />
               <Route path="generate" element={<GeneratePramaan />} />
+              <Route path="history" element={<History />} />
             </Route>
             <Route path="payments" element={<Payments />} />
             <Route path="documents" element={<Documents />} />

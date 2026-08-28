@@ -1,12 +1,15 @@
 import React, { useEffect, useRef, useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import { useTranslation } from '../../../i18n/useTranslation';
-import { useNavigate } from 'react-router-dom';
 import { useStore } from '../../../store/useStore';
 import {
   ArrowLeft, Camera, CheckCircle2, RefreshCw, UserCheck, Pencil, Plus,
-  Download, Printer, Home, AlertTriangle,
+  Download, Printer, Home, AlertTriangle, CreditCard, User, FileText,
+  Landmark, Mail, Users, MapPin, Globe, Heart, Briefcase, Smartphone, KeyRound, Building2,
 } from 'lucide-react';
 import { Glossary } from '../../../components/ui/Glossary';
+import { ResendIdButton } from '../../../components/ui/ResendId';
+import { downloadReceiptPdf } from '../../../lib/receiptPdf';
 import { playTone } from '../../../lib/audioCue';
 
 type Step = 'operator' | 'pensioner' | 'review' | 'success';
@@ -72,6 +75,71 @@ function Field({ label, help, htmlFor, children }: { label: React.ReactNode; hel
   );
 }
 
+const FIELD_ICONS: Record<FieldKey, React.ComponentType<{ className?: string }>> = {
+  aadhaar: CreditCard, name: User, ppo: FileText, authority: Building2, bank: Landmark,
+  email: Mail, pensionType: Users, pda: MapPin, country: Globe, state: MapPin,
+  remarried: Heart, reemployed: Briefcase,
+};
+
+function LabelWithIcon({ icon: Icon, children }: { icon?: React.ComponentType<{ className?: string }>; children: React.ReactNode }) {
+  return (
+    <span className="inline-flex items-center gap-2">
+      {Icon && <Icon className="w-5 h-5 text-[var(--color-info)] shrink-0" aria-hidden="true" />}
+      {children}
+    </span>
+  );
+}
+
+function OtpInput({ value, onChange, length = 6 }: { value: string; onChange: (v: string) => void; length?: number }) {
+  const { t } = useTranslation();
+  const refs = useRef<(HTMLInputElement | null)[]>([]);
+  const digits = Array.from({ length }, (_, i) => value[i] ?? '');
+  const setDigit = (i: number, d: string) => {
+    const next = [...digits];
+    next[i] = d;
+    onChange(next.join('').slice(0, length));
+  };
+  useEffect(() => { refs.current[0]?.focus(); }, []);
+  const handleChange = (i: number, e: React.ChangeEvent<HTMLInputElement>) => {
+    const v = e.target.value.replace(/\D/g, '');
+    if (v.length > 1) {
+      const chars = v.split('');
+      const next = [...digits];
+      let idx = i;
+      for (const c of chars) { if (idx < length) { next[idx] = c; idx++; } }
+      onChange(next.join('').slice(0, length));
+      refs.current[Math.min(idx, length - 1)]?.focus();
+      return;
+    }
+    setDigit(i, v);
+    if (v && i < length - 1) refs.current[i + 1]?.focus();
+  };
+  const handleKeyDown = (i: number, e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Backspace' && !digits[i] && i > 0) refs.current[i - 1]?.focus();
+    else if (e.key === 'ArrowLeft' && i > 0) refs.current[i - 1]?.focus();
+    else if (e.key === 'ArrowRight' && i < length - 1) refs.current[i + 1]?.focus();
+  };
+  return (
+    <div className="flex gap-2" role="group" aria-label={t('gen_otp')}>
+      {digits.map((d, i) => (
+        <input
+          key={i}
+          ref={(el) => { refs.current[i] = el; }}
+          value={d}
+          inputMode="numeric"
+          type="tel"
+          autoComplete="one-time-code"
+          maxLength={1}
+          onChange={(e) => handleChange(i, e)}
+          onKeyDown={(e) => handleKeyDown(i, e)}
+          className="w-12 h-14 text-center text-2xl font-bold rounded-lg border-2 border-slate-300 focus:border-[var(--color-info)] outline-none"
+          aria-label={t('otp_box', { n: i + 1 })}
+        />
+      ))}
+    </div>
+  );
+}
+
 export default function GeneratePramaan() {
   const { t } = useTranslation();
   const navigate = useNavigate();
@@ -85,6 +153,7 @@ export default function GeneratePramaan() {
   const [faceVerified, setFaceVerified] = useState(false);
   const [diag, setDiag] = useState(false);
   const [error, setError] = useState('');
+  const [notice, setNotice] = useState('');
   const [pramaanId, setPramaanId] = useState('');
   const [sessionList, setSessionList] = useState<{ id: string; name: string; aadhaar: string }[]>([]);
   const [focusBank, setFocusBank] = useState(false);
@@ -288,11 +357,30 @@ export default function GeneratePramaan() {
   const handleConfirm = () => {
     if (!diag) { setDiag(true); return; }
     const id = 'JP' + Math.floor(1000000000 + Math.random() * 9000000000).toString();
+    const date = new Date().toISOString().split('T')[0];
     setPramaanId(id);
     recordDlc({ pramaanId: id, ppoNumber: pensioner.ppo, accountMasked: pensioner.bank, name: pensioner.name });
     setSessionList((list) => [...list, { id, name: pensioner.name, aadhaar: pensioner.aadhaar }]);
     try { localStorage.removeItem(SAVE_KEY); } catch { /* ignore */ }
+    try {
+      downloadReceiptPdf({ name: pensioner.name, aadhaar: pensioner.aadhaar, ppo: pensioner.ppo, bank: pensioner.bank, email: pensioner.email, pramaanId: id, date });
+      setNotice('pdf_auto');
+    } catch {
+      setNotice('pdf_auto_fail');
+    }
     setStep('success');
+  };
+
+  const handleDownload = () => {
+    try {
+      downloadReceiptPdf({
+        name: pensioner.name, aadhaar: pensioner.aadhaar, ppo: pensioner.ppo,
+        bank: pensioner.bank, email: pensioner.email, pramaanId, date: new Date().toISOString().split('T')[0],
+      });
+      setNotice('');
+    } catch {
+      setNotice('pdf_download_fail');
+    }
   };
 
   const onConfirmClick = () => {
@@ -321,10 +409,10 @@ export default function GeneratePramaan() {
       );
     }
     if (field.key === 'aadhaar') {
-      return <input id={`f-${field.key}`} inputMode="numeric" value={val} onChange={(e) => set(e.target.value.replace(/\D/g, '').slice(0, 12))} placeholder="1234 5678 9012" className={inputCls + ' font-mono'} />;
+      return <input id={`f-${field.key}`} type="tel" inputMode="numeric" value={val} onChange={(e) => set(e.target.value.replace(/\D/g, '').slice(0, 12))} placeholder="1234 5678 9012" className={inputCls + ' font-mono'} />;
     }
     if (field.key === 'bank') {
-      return <input id={`f-${field.key}`} inputMode="numeric" value={val} onChange={(e) => set(e.target.value.replace(/\D/g, '').slice(0, 18))} placeholder="Account number" className={inputCls + ' font-mono'} />;
+      return <input id={`f-${field.key}`} type="tel" inputMode="numeric" value={val} onChange={(e) => set(e.target.value.replace(/\D/g, '').slice(0, 18))} placeholder="Account number" className={inputCls + ' font-mono'} />;
     }
     const type = field.type === 'email' ? 'email' : 'text';
     return <input id={`f-${field.key}`} type={type} value={val} onChange={(e) => set(e.target.value)} placeholder={field.key === 'name' ? 'e.g. Ramesh Kumar' : field.key === 'email' ? 'name@example.com' : field.key === 'state' ? 'e.g. Delhi' : ''} className={inputCls} />;
@@ -334,7 +422,7 @@ export default function GeneratePramaan() {
     field.glossary ? <Glossary term={field.glossary}>{t(field.labelKey)}</Glossary> : t(field.labelKey);
 
   const FieldBlock = ({ field }: { field: FieldDef; key?: string | number }) => (
-    <Field label={labelNode(field)} help={field.helpKey ? t(field.helpKey) : undefined} htmlFor={`f-${field.key}`}>
+    <Field label={<LabelWithIcon icon={FIELD_ICONS[field.key]}>{labelNode(field)}</LabelWithIcon>} help={field.helpKey ? t(field.helpKey) : undefined} htmlFor={`f-${field.key}`}>
       {renderControl(field)}
       {field.key === 'bank' && <p className="text-sm font-semibold text-[var(--color-success)] mt-2">{t('gen_free_govt')}</p>}
     </Field>
@@ -380,14 +468,14 @@ export default function GeneratePramaan() {
           )}
 
           <div className="bg-white border border-[var(--color-border)] rounded-lg p-6 sm:p-8 space-y-6">
-            <Field label={t('gen_operator_aadhaar')} help={t('gen_operator_aadhaar_help')} htmlFor="opAadhaar">
-              <input id="opAadhaar" inputMode="numeric" value={operator.aadhaar}
+            <Field label={<LabelWithIcon icon={CreditCard}>{t('gen_operator_aadhaar')}</LabelWithIcon>} help={t('gen_operator_aadhaar_help')} htmlFor="opAadhaar">
+              <input id="opAadhaar" type="tel" inputMode="numeric" value={operator.aadhaar}
                 onChange={(e) => setOperator((o) => ({ ...o, aadhaar: e.target.value.replace(/\D/g, '').slice(0, 12) }))}
                 placeholder="1234 5678 9012" className={inputCls + ' font-mono'} />
             </Field>
 
-            <Field label={t('gen_operator_mobile')} help={t('gen_operator_mobile_help')} htmlFor="opMobile">
-              <input id="opMobile" inputMode="numeric" value={operator.mobile}
+            <Field label={<LabelWithIcon icon={Smartphone}>{t('gen_operator_mobile')}</LabelWithIcon>} help={t('gen_operator_mobile_help')} htmlFor="opMobile">
+              <input id="opMobile" type="tel" inputMode="numeric" value={operator.mobile}
                 onChange={(e) => setOperator((o) => ({ ...o, mobile: e.target.value.replace(/\D/g, '').slice(0, 10) }))}
                 placeholder="98765 43210" className={inputCls + ' font-mono'} />
             </Field>
@@ -404,10 +492,8 @@ export default function GeneratePramaan() {
             ) : (
               <div className="space-y-4 border-t border-[var(--color-border)] pt-6">
                 <p className="text-sm font-bold text-[var(--color-success)]">{t('gen_otp_sent_msg')} {operator.mobile.replace(/(\d{5})(\d{5})/, '$1 $2')}</p>
-                <Field label={t('gen_otp')} help={t('gen_otp_help')} htmlFor="opOtp">
-                  <input id="opOtp" inputMode="numeric" value={operator.otp}
-                    onChange={(e) => setOperator((o) => ({ ...o, otp: e.target.value.replace(/\D/g, '').slice(0, 6) }))}
-                    placeholder="6-digit OTP" className={inputCls + ' font-mono tracking-widest'} />
+                <Field label={<LabelWithIcon icon={KeyRound}>{t('gen_otp')}</LabelWithIcon>} help={t('gen_otp_help')} htmlFor="opOtp">
+                  <OtpInput value={operator.otp} onChange={(v) => setOperator((o) => ({ ...o, otp: v }))} />
                 </Field>
                 {error && <p role="alert" className="text-sm font-bold text-[var(--color-danger)] bg-[var(--color-danger-bg)] border border-[var(--color-danger)]/20 px-4 py-3 rounded-lg">{error}</p>}
                 <div className="flex flex-wrap gap-3">
@@ -622,10 +708,14 @@ export default function GeneratePramaan() {
                 <tr><th scope="row" className="py-2 pr-4 text-sm font-bold uppercase tracking-widest text-[var(--color-muted)]">{t('gen_email')}</th><td className="py-2 font-bold">{pensioner.email}</td></tr>
               </tbody>
             </table>
-            <div className="flex flex-wrap gap-3 mt-6">
-              <button onClick={() => window.print()} className="bg-white border-2 border-[var(--color-info)] text-[var(--color-info)] font-bold px-6 py-3 rounded-lg inline-flex items-center gap-2"><Printer className="w-5 h-5" aria-hidden="true" />{t('gen_print')}</button>
-              <a href="#" onClick={(e) => e.preventDefault()} className="btn-primary px-6 py-3 rounded-lg inline-flex items-center gap-2"><Download className="w-5 h-5" aria-hidden="true" />{t('gen_download_pdf')}</a>
-            </div>
+             <div className="flex flex-wrap gap-3 mt-6">
+               <button onClick={() => window.print()} className="bg-white border-2 border-[var(--color-info)] text-[var(--color-info)] font-bold px-6 py-3 rounded-lg inline-flex items-center gap-2"><Printer className="w-5 h-5" aria-hidden="true" />{t('gen_print')}</button>
+               <button onClick={handleDownload} className="btn-primary px-6 py-3 rounded-lg inline-flex items-center gap-2"><Download className="w-5 h-5" aria-hidden="true" />{t('gen_download_pdf')}</button>
+             </div>
+             {notice && <p role="status" className={`mt-3 text-sm font-bold ${notice === 'pdf_download_fail' || notice === 'pdf_auto_fail' ? 'text-[var(--color-danger)]' : 'text-[var(--color-success)]'}`}>{t(notice)}</p>}
+             <div className="mt-5 border-t border-[var(--color-border)] pt-5">
+               <ResendIdButton pramaanId={pramaanId} />
+             </div>
           </div>
 
           <div className="bg-[var(--color-bg)] border border-[var(--color-border)] rounded-lg p-6">
@@ -657,10 +747,11 @@ export default function GeneratePramaan() {
             </div>
           )}
 
-          <div className="flex flex-wrap gap-3">
-            <button onClick={addAnother} className="bg-white border-2 border-[var(--color-info)] text-[var(--color-info)] font-bold px-6 py-3 rounded-lg inline-flex items-center gap-2"><Plus className="w-5 h-5" aria-hidden="true" />{t('gen_add_another')}</button>
-            <button onClick={cancel} className="bg-slate-900 text-white font-bold px-6 py-3 rounded-lg inline-flex items-center gap-2"><Home className="w-5 h-5" aria-hidden="true" />{t('gen_finish_home')}</button>
-          </div>
+           <div className="flex flex-wrap gap-3">
+             <button onClick={addAnother} className="bg-white border-2 border-[var(--color-info)] text-[var(--color-info)] font-bold px-6 py-3 rounded-lg inline-flex items-center gap-2"><Plus className="w-5 h-5" aria-hidden="true" />{t('gen_add_another')}</button>
+             <Link to="/pramaan/history" className="bg-white border-2 border-[var(--color-border)] text-[var(--color-text)] font-bold px-6 py-3 rounded-lg inline-flex items-center gap-2"><FileText className="w-5 h-5" aria-hidden="true" />{t('hist_link')}</Link>
+             <button onClick={cancel} className="bg-slate-900 text-white font-bold px-6 py-3 rounded-lg inline-flex items-center gap-2"><Home className="w-5 h-5" aria-hidden="true" />{t('gen_finish_home')}</button>
+           </div>
         </div>
       )}
 

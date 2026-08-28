@@ -94,6 +94,9 @@ export default function PensionerDashboard() {
         <Link to="/pramaan/generate" className="bg-white p-6 rounded-lg border border-[var(--color-border)] hover:border-[var(--color-info)] flex items-center">
           <span className="font-bold text-lg text-left">{t('renew_lc')}</span>
         </Link>
+        <Link to="/pramaan/history" className="bg-white p-6 rounded-lg border border-[var(--color-border)] hover:border-[var(--color-info)] flex items-center">
+          <span className="font-bold text-lg text-left">{t('hist_link')}</span>
+        </Link>
       </div>
 
       <div className="bg-white border border-[var(--color-border)] rounded-lg p-6 sm:p-8 text-left">

@@ -8,6 +8,7 @@ const keyMap: Record<string, string> = {
   'find-id': 'findid_title',
   download: 'download_title',
   generate: 'gen_title',
+  history: 'hist_title',
   payments: 'payments_title',
   documents: 'documents_title',
   help: 'help_title',
