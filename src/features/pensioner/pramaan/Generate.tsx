@@ -3,9 +3,11 @@ import { useTranslation } from '../../../i18n/useTranslation';
 import { useNavigate } from 'react-router-dom';
 import { useStore } from '../../../store/useStore';
 import {
-  ArrowLeft, Camera, CheckCircle2, UserCheck, Pencil, Plus,
+  ArrowLeft, Camera, CheckCircle2, RefreshCw, UserCheck, Pencil, Plus,
   Download, Printer, Home, AlertTriangle,
 } from 'lucide-react';
+import { Glossary } from '../../../components/ui/Glossary';
+import { playTone } from '../../../lib/audioCue';
 
 type Step = 'operator' | 'pensioner' | 'review' | 'success';
 
@@ -32,6 +34,16 @@ interface PensionerState {
   reemployed: string;
 }
 
+type FieldKey = keyof PensionerState;
+type FieldDef = {
+  key: FieldKey;
+  labelKey: string;
+  helpKey?: string;
+  type: 'text' | 'email' | 'number' | 'select';
+  options?: { value: string; labelKey: string }[];
+  glossary?: 'glossary_ppo' | 'glossary_pda' | 'glossary_authority';
+};
+
 const emptyPensioner: PensionerState = {
   aadhaar: '', name: '', ppo: '', authority: '', bank: '', email: '',
   pensionType: '', pda: '', country: 'India', state: '', remarried: '', reemployed: '',
@@ -40,9 +52,17 @@ const emptyPensioner: PensionerState = {
 const inputCls =
   'w-full p-3.5 rounded-lg border-2 border-slate-300 focus:border-[var(--color-info)] outline-none text-lg font-bold bg-white';
 
-function Field({
-  label, help, htmlFor, children,
-}: { label: string; help?: string; htmlFor?: string; children: React.ReactNode }) {
+const SAVE_KEY = 'jp-wizard-v1';
+type Snapshot = {
+  step: Step;
+  operator: OperatorState;
+  pensioner: PensionerState;
+  faceVerified: boolean;
+  faceAttempts: number;
+  singleField: boolean;
+};
+
+function Field({ label, help, htmlFor, children }: { label: React.ReactNode; help?: string; htmlFor?: string; children: React.ReactNode }) {
   return (
     <div>
       <label htmlFor={htmlFor} className="block font-bold text-lg">{label}</label>
@@ -70,23 +90,59 @@ export default function GeneratePramaan() {
   const [focusBank, setFocusBank] = useState(false);
   const [sending, setSending] = useState(false);
   const [verifying, setVerifying] = useState(false);
+  const [photo, setPhoto] = useState<string | null>(null);
+
+  // Accessibility features
+  const [singleField, setSingleField] = useState(true);
+  const [fieldIndex, setFieldIndex] = useState(0);
+  const [practice, setPractice] = useState(false);
+  const [practiceDone, setPracticeDone] = useState(false);
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const [resumePrompt, setResumePrompt] = useState(false);
+  const [saved, setSaved] = useState<Snapshot | null>(null);
 
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const bankRef = useRef<HTMLInputElement>(null);
   const stepRef = useRef<HTMLHeadingElement>(null);
-  const [photo, setPhoto] = useState<string | null>(null);
 
-  useEffect(() => { stepRef.current?.focus(); }, [step]);
+  const authorities = [
+    { value: 'central', labelKey: 'auth_central' },
+    { value: 'state', labelKey: 'auth_state' },
+    { value: 'epfo', labelKey: 'auth_epfo' },
+    { value: 'defence', labelKey: 'auth_defence' },
+  ];
+  const pensionTypes = [
+    { value: 'super', labelKey: 'pen_super' },
+    { value: 'family', labelKey: 'pen_family' },
+    { value: 'disability', labelKey: 'pen_disability' },
+    { value: 'commuted', labelKey: 'pen_commuted' },
+  ];
+  const countries = [{ value: 'India', labelKey: 'other' }, { value: 'Other', labelKey: 'other' }];
+  const yesNo = [{ value: 'no', labelKey: 'no' }, { value: 'yes', labelKey: 'yes' }];
 
-  useEffect(() => {
-    if (focusBank && step === 'pensioner' && bankRef.current) {
-      bankRef.current.focus();
-      setFocusBank(false);
-    }
-  }, [focusBank, step]);
+  const FIELDS: FieldDef[] = [
+    { key: 'aadhaar', labelKey: 'gen_pensioner_aadhaar', helpKey: 'gen_pensioner_aadhaar_help', type: 'number' },
+    { key: 'name', labelKey: 'gen_full_name', helpKey: 'gen_full_name_help', type: 'text' },
+    { key: 'ppo', labelKey: 'gen_ppo', helpKey: 'gen_ppo_help', type: 'text', glossary: 'glossary_ppo' },
+    { key: 'authority', labelKey: 'gen_authority', helpKey: 'gen_authority_help', type: 'select', options: authorities, glossary: 'glossary_authority' },
+    { key: 'bank', labelKey: 'gen_bank', helpKey: 'gen_bank_help', type: 'number' },
+    { key: 'email', labelKey: 'gen_email', helpKey: 'gen_email_help', type: 'email' },
+    { key: 'pensionType', labelKey: 'gen_pension_type', helpKey: 'gen_pension_type_help', type: 'select', options: pensionTypes },
+    { key: 'pda', labelKey: 'gen_pda', helpKey: 'gen_pda_help', type: 'text', glossary: 'glossary_pda' },
+    { key: 'country', labelKey: 'gen_country', helpKey: 'gen_country_help', type: 'select', options: countries },
+    { key: 'state', labelKey: 'gen_state', helpKey: 'gen_state_help', type: 'text' },
+    { key: 'remarried', labelKey: 'gen_remarried', helpKey: 'gen_remarried_help', type: 'select', options: yesNo },
+    { key: 'reemployed', labelKey: 'gen_reemployed', helpKey: 'gen_reemployed_help', type: 'select', options: yesNo },
+  ];
 
+  const stepNumber = step === 'operator' ? 1 : step === 'pensioner' ? 2 : step === 'review' ? 3 : 4;
+  const reassureKey = step === 'operator' ? 'gen_reassure_3' : step === 'pensioner' ? 'gen_reassure_2' : step === 'review' ? 'gen_reassure_1' : 'gen_reassure_0';
+
+  const cancel = () => navigate('/');
+
+  // Camera lifecycle
   useEffect(() => {
     let active = true;
     if (step === 'pensioner') {
@@ -105,24 +161,80 @@ export default function GeneratePramaan() {
     };
   }, [step]);
 
-  const stepNumber = step === 'operator' ? 1 : step === 'pensioner' ? 2 : step === 'review' ? 3 : 4;
+  useEffect(() => { stepRef.current?.focus(); }, [step]);
 
-  const authorities = [
-    { value: 'central', label: t('auth_central') },
-    { value: 'state', label: t('auth_state') },
-    { value: 'epfo', label: t('auth_epfo') },
-    { value: 'defence', label: t('auth_defence') },
-  ];
-  const pensionTypes = [
-    { value: 'super', label: t('pen_super') },
-    { value: 'family', label: t('pen_family') },
-    { value: 'disability', label: t('pen_disability') },
-    { value: 'commuted', label: t('pen_commuted') },
-  ];
-  const countries = [{ value: 'India', label: 'India' }, { value: 'Other', label: t('other') }];
-  const yesNo = [{ value: 'no', label: t('no') }, { value: 'yes', label: t('yes') }];
+  useEffect(() => {
+    if (focusBank && step === 'pensioner' && bankRef.current) {
+      bankRef.current.focus();
+      setFocusBank(false);
+    }
+  }, [focusBank, step]);
 
-  const cancel = () => navigate('/');
+  // Save-and-resume: load on mount
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(SAVE_KEY);
+      if (raw) {
+        const s = JSON.parse(raw) as Snapshot;
+        if (s && s.step && s.step !== 'success') {
+          setSaved(s);
+          setResumePrompt(true);
+        }
+      }
+    } catch { /* ignore */ }
+  }, []);
+
+  // Save-and-resume: persist on change
+  useEffect(() => {
+    try {
+      const snap: Snapshot = {
+        step,
+        operator: { ...operator, otp: '' },
+        pensioner,
+        faceVerified,
+        faceAttempts,
+        singleField,
+      };
+      localStorage.setItem(SAVE_KEY, JSON.stringify(snap));
+    } catch { /* ignore */ }
+  }, [step, operator, pensioner, faceVerified, faceAttempts, singleField]);
+
+  const applyResume = () => {
+    if (!saved) return;
+    setStep(saved.step);
+    setOperator(saved.operator);
+    setPensioner(saved.pensioner);
+    setFaceVerified(saved.faceVerified);
+    setFaceAttempts(saved.faceAttempts);
+    setSingleField(saved.singleField);
+    setFieldIndex(0);
+    setResumePrompt(false);
+  };
+  const discardResume = () => {
+    localStorage.removeItem(SAVE_KEY);
+    setSaved(null);
+    setResumePrompt(false);
+    setOperator({ aadhaar: '', mobile: '', otp: '', verified: false, otpSent: false });
+    setPensioner(emptyPensioner);
+    setFaceAttempts(0); setFaceTip(0); setFaceVerified(false); setPhoto(null);
+    setStep('operator');
+  };
+  const clearSaved = () => {
+    localStorage.removeItem(SAVE_KEY);
+    discardResume();
+  };
+
+  const capturePhoto = () => {
+    const video = videoRef.current;
+    const canvas = canvasRef.current;
+    if (video && canvas && video.videoWidth) {
+      canvas.width = video.videoWidth;
+      canvas.height = video.videoHeight;
+      const ctx = canvas.getContext('2d');
+      ctx?.drawImage(video, 0, 0, canvas.width, canvas.height);
+      setPhoto(canvas.toDataURL('image/png'));
+    }
+  };
 
   const handleSendOtp = () => {
     setError('');
@@ -151,38 +263,23 @@ export default function GeneratePramaan() {
   };
 
   const handleCapture = () => {
-    const video = videoRef.current;
-    const canvas = canvasRef.current;
-    if (video && canvas && video.videoWidth) {
-      canvas.width = video.videoWidth;
-      canvas.height = video.videoHeight;
-      const ctx = canvas.getContext('2d');
-      ctx?.drawImage(video, 0, 0, canvas.width, canvas.height);
-      setPhoto(canvas.toDataURL('image/png'));
-    }
+    capturePhoto();
     const next = faceAttempts + 1;
     setFaceAttempts(next);
-    if (next >= 3) { setFaceVerified(true); setFaceTip(0); }
-    else { setFaceTip(next as 1 | 2); }
+    if (next >= 3) { setFaceVerified(true); setFaceTip(0); playTone('success'); }
+    else { setFaceTip(next as 1 | 2); playTone('fail'); }
+  };
+
+  const handlePractice = () => {
+    capturePhoto();
+    playTone('practice');
+    setPracticeDone(true);
   };
 
   const continueToReview = () => {
-    const required: [keyof PensionerState, string][] = [
-      ['aadhaar', t('gen_pensioner_aadhaar')],
-      ['name', t('gen_full_name')],
-      ['ppo', t('gen_ppo')],
-      ['authority', t('gen_authority')],
-      ['bank', t('gen_bank')],
-      ['email', t('gen_email')],
-      ['pensionType', t('gen_pension_type')],
-      ['pda', t('gen_pda')],
-      ['country', t('gen_country')],
-      ['state', t('gen_state')],
-      ['remarried', t('gen_remarried')],
-      ['reemployed', t('gen_reemployed')],
-    ];
+    const required: [FieldKey, string][] = FIELDS.map((f) => [f.key, t(f.labelKey)]);
     const missing = required.filter(([k]) => !pensioner[k].trim());
-    if (missing.length) { setError(t('gen_required')); return; }
+    if (missing.length) { setError(t('gen_required')); setFieldIndex(FIELDS.findIndex((f) => !pensioner[f.key].trim())); return; }
     if (!faceVerified) { setError(t('gen_face_help')); return; }
     setError(''); setDiag(false);
     setStep('review');
@@ -194,7 +291,13 @@ export default function GeneratePramaan() {
     setPramaanId(id);
     recordDlc({ pramaanId: id, ppoNumber: pensioner.ppo, accountMasked: pensioner.bank, name: pensioner.name });
     setSessionList((list) => [...list, { id, name: pensioner.name, aadhaar: pensioner.aadhaar }]);
+    try { localStorage.removeItem(SAVE_KEY); } catch { /* ignore */ }
     setStep('success');
+  };
+
+  const onConfirmClick = () => {
+    if (!diag) { setDiag(true); return; }
+    setConfirmOpen(true);
   };
 
   const addAnother = () => {
@@ -206,8 +309,51 @@ export default function GeneratePramaan() {
 
   const correctNow = () => { setDiag(false); setStep('pensioner'); setFocusBank(true); };
 
+  const renderControl = (field: FieldDef) => {
+    const val = pensioner[field.key];
+    const set = (v: string) => setPensioner((p) => ({ ...p, [field.key]: v }));
+    if (field.type === 'select') {
+      return (
+        <select id={`f-${field.key}`} value={val} onChange={(e) => set(e.target.value)} className={inputCls}>
+          <option value="">—</option>
+          {field.options!.map((o) => <option key={o.value} value={o.value}>{t(o.labelKey)}</option>)}
+        </select>
+      );
+    }
+    if (field.key === 'aadhaar') {
+      return <input id={`f-${field.key}`} inputMode="numeric" value={val} onChange={(e) => set(e.target.value.replace(/\D/g, '').slice(0, 12))} placeholder="1234 5678 9012" className={inputCls + ' font-mono'} />;
+    }
+    if (field.key === 'bank') {
+      return <input id={`f-${field.key}`} inputMode="numeric" value={val} onChange={(e) => set(e.target.value.replace(/\D/g, '').slice(0, 18))} placeholder="Account number" className={inputCls + ' font-mono'} />;
+    }
+    const type = field.type === 'email' ? 'email' : 'text';
+    return <input id={`f-${field.key}`} type={type} value={val} onChange={(e) => set(e.target.value)} placeholder={field.key === 'name' ? 'e.g. Ramesh Kumar' : field.key === 'email' ? 'name@example.com' : field.key === 'state' ? 'e.g. Delhi' : ''} className={inputCls} />;
+  };
+
+  const labelNode = (field: FieldDef) =>
+    field.glossary ? <Glossary term={field.glossary}>{t(field.labelKey)}</Glossary> : t(field.labelKey);
+
+  const FieldBlock = ({ field }: { field: FieldDef; key?: string | number }) => (
+    <Field label={labelNode(field)} help={field.helpKey ? t(field.helpKey) : undefined} htmlFor={`f-${field.key}`}>
+      {renderControl(field)}
+      {field.key === 'bank' && <p className="text-sm font-semibold text-[var(--color-success)] mt-2">{t('gen_free_govt')}</p>}
+    </Field>
+  );
+
   return (
     <div className="max-w-3xl space-y-6 pb-16 text-left">
+      {/* Resume prompt */}
+      {resumePrompt && saved && (
+        <div className="bg-[var(--color-warn-bg)] border-2 border-[var(--color-warn)] rounded-lg p-6 text-left" role="dialog" aria-label={t('gen_resume_title')}>
+          <h2 className="font-bold text-xl">{t('gen_resume_title')}</h2>
+          <p className="mt-2 text-[var(--color-muted)]">{t('gen_resume_desc')}</p>
+          <div className="flex flex-wrap gap-3 mt-4">
+            <button onClick={applyResume} className="btn-primary px-6 py-3 rounded-lg font-bold">{t('gen_resume_yes')}</button>
+            <button onClick={discardResume} className="border border-[var(--color-border)] px-6 py-3 rounded-lg font-bold">{t('gen_resume_no')}</button>
+          </div>
+        </div>
+      )}
+
       {/* Header */}
       <div className="flex items-center justify-between border-b border-[var(--color-border)] pb-4">
         <div className="flex items-center gap-3">
@@ -222,12 +368,16 @@ export default function GeneratePramaan() {
       <div className="w-full bg-[var(--color-border)] h-2 rounded-full overflow-hidden" aria-hidden="true">
         <div className="bg-[var(--color-info)] h-full transition-all" style={{ width: `${(stepNumber / 4) * 100}%` }} />
       </div>
+      <p className="text-sm font-bold text-[var(--color-info)]">{t(reassureKey)}</p>
 
       {/* STEP 1 — OPERATOR */}
       {step === 'operator' && (
         <div className="space-y-6">
           <h2 ref={stepRef} tabIndex={-1} className="outline-none">{t('gen_step_operator')}</h2>
           <p className="text-[var(--color-muted)]">{t('gen_operator_step_desc')}</p>
+          {saved && (
+            <button onClick={clearSaved} className="text-sm font-bold text-[var(--color-info)] underline underline-offset-4">{t('gen_clear_saved')}</button>
+          )}
 
           <div className="bg-white border border-[var(--color-border)] rounded-lg p-6 sm:p-8 space-y-6">
             <Field label={t('gen_operator_aadhaar')} help={t('gen_operator_aadhaar_help')} htmlFor="opAadhaar">
@@ -268,6 +418,7 @@ export default function GeneratePramaan() {
                     {verifying ? t('gen_verifying') : t('gen_verify_continue')}
                   </button>
                 </div>
+                <p className="text-xs text-[var(--color-muted)]">{t('gen_back_safe')}</p>
               </div>
             )}
           </div>
@@ -292,89 +443,52 @@ export default function GeneratePramaan() {
 
           <p className="text-[var(--color-muted)]">{t('gen_pensioner_step_desc')}</p>
 
-          <div className="bg-white border border-[var(--color-border)] rounded-lg p-6 sm:p-8 space-y-6">
-            <Field label={t('gen_pensioner_aadhaar')} help={t('gen_pensioner_aadhaar_help')} htmlFor="penAadhaar">
-              <input id="penAadhaar" inputMode="numeric" value={pensioner.aadhaar}
-                onChange={(e) => setPensioner((p) => ({ ...p, aadhaar: e.target.value.replace(/\D/g, '').slice(0, 12) }))}
-                placeholder="1234 5678 9012" className={inputCls + ' font-mono'} />
-            </Field>
-
-            <Field label={t('gen_full_name')} help={t('gen_full_name_help')} htmlFor="penName">
-              <input id="penName" value={pensioner.name}
-                onChange={(e) => setPensioner((p) => ({ ...p, name: e.target.value }))}
-                placeholder="e.g. Ramesh Kumar" className={inputCls} />
-            </Field>
-
-            <Field label={t('gen_ppo')} help={t('gen_ppo_help')} htmlFor="penPpo">
-              <input id="penPpo" value={pensioner.ppo}
-                onChange={(e) => setPensioner((p) => ({ ...p, ppo: e.target.value }))}
-                placeholder="PPO / PPO-1234567" className={inputCls + ' font-mono'} />
-            </Field>
-
-            <Field label={t('gen_authority')} help={t('gen_authority_help')} htmlFor="penAuth">
-              <select id="penAuth" value={pensioner.authority}
-                onChange={(e) => setPensioner((p) => ({ ...p, authority: e.target.value }))} className={inputCls}>
-                <option value="">—</option>
-                {authorities.map((a) => <option key={a.value} value={a.value}>{a.label}</option>)}
-              </select>
-            </Field>
-
-            <Field label={t('gen_bank')} help={t('gen_bank_help')} htmlFor="penBank">
-              <input id="penBank" ref={bankRef} inputMode="numeric" value={pensioner.bank}
-                onChange={(e) => setPensioner((p) => ({ ...p, bank: e.target.value.replace(/\D/g, '').slice(0, 18) }))}
-                placeholder="Account number" className={inputCls + ' font-mono'} />
-            </Field>
-
-            <Field label={t('gen_email')} help={t('gen_email_help')} htmlFor="penEmail">
-              <input id="penEmail" type="email" value={pensioner.email}
-                onChange={(e) => setPensioner((p) => ({ ...p, email: e.target.value }))}
-                placeholder="name@example.com" className={inputCls} />
-            </Field>
-
-            <Field label={t('gen_pension_type')} help={t('gen_pension_type_help')} htmlFor="penType">
-              <select id="penType" value={pensioner.pensionType}
-                onChange={(e) => setPensioner((p) => ({ ...p, pensionType: e.target.value }))} className={inputCls}>
-                <option value="">—</option>
-                {pensionTypes.map((a) => <option key={a.value} value={a.value}>{a.label}</option>)}
-              </select>
-            </Field>
-
-            <Field label={t('gen_pda')} help={t('gen_pda_help')} htmlFor="penPda">
-              <input id="penPda" value={pensioner.pda}
-                onChange={(e) => setPensioner((p) => ({ ...p, pda: e.target.value }))}
-                placeholder="e.g. State Bank of India" className={inputCls} />
-            </Field>
-
-            <Field label={t('gen_country')} help={t('gen_country_help')} htmlFor="penCountry">
-              <select id="penCountry" value={pensioner.country}
-                onChange={(e) => setPensioner((p) => ({ ...p, country: e.target.value }))} className={inputCls}>
-                {countries.map((a) => <option key={a.value} value={a.value}>{a.label}</option>)}
-              </select>
-            </Field>
-
-            <Field label={t('gen_state')} help={t('gen_state_help')} htmlFor="penState">
-              <input id="penState" value={pensioner.state}
-                onChange={(e) => setPensioner((p) => ({ ...p, state: e.target.value }))}
-                placeholder="e.g. Delhi" className={inputCls} />
-            </Field>
-
-            <div className="grid sm:grid-cols-2 gap-6">
-              <Field label={t('gen_remarried')} help={t('gen_remarried_help')} htmlFor="penRem">
-                <select id="penRem" value={pensioner.remarried}
-                  onChange={(e) => setPensioner((p) => ({ ...p, remarried: e.target.value }))} className={inputCls}>
-                  <option value="">—</option>
-                  {yesNo.map((a) => <option key={a.value} value={a.value}>{a.label}</option>)}
-                </select>
-              </Field>
-              <Field label={t('gen_reemployed')} help={t('gen_reemployed_help')} htmlFor="penReemp">
-                <select id="penReemp" value={pensioner.reemployed}
-                  onChange={(e) => setPensioner((p) => ({ ...p, reemployed: e.target.value }))} className={inputCls}>
-                  <option value="">—</option>
-                  {yesNo.map((a) => <option key={a.value} value={a.value}>{a.label}</option>)}
-                </select>
-              </Field>
-            </div>
+          {/* Mode toggle */}
+          <div className="flex items-center gap-3 flex-wrap">
+            <button onClick={() => setSingleField(true)} aria-pressed={singleField}
+              className={`px-5 py-3 rounded-lg font-bold border ${singleField ? 'bg-[var(--color-info)] text-white border-[var(--color-info)]' : 'border-[var(--color-border)] text-slate-700'}`}>
+              {t('gen_single_field')}
+            </button>
+            <button onClick={() => setSingleField(false)} aria-pressed={!singleField}
+              className={`px-5 py-3 rounded-lg font-bold border ${!singleField ? 'bg-[var(--color-info)] text-white border-[var(--color-info)]' : 'border-[var(--color-border)] text-slate-700'}`}>
+              {t('gen_all_fields')}
+            </button>
           </div>
+
+          {/* Single-field mode */}
+          {singleField && (
+            <div className="bg-white border border-[var(--color-border)] rounded-lg p-6 sm:p-8 space-y-6">
+              <p className="text-sm font-bold text-[var(--color-info)]">{t('gen_field_of', { n: fieldIndex + 1, total: FIELDS.length })}</p>
+              <div className="flex flex-wrap gap-2">
+                {FIELDS.map((f, i) => (
+                  <button key={f.key} onClick={() => setFieldIndex(i)}
+                    className={`px-3 py-2 rounded-lg text-sm font-bold border ${i === fieldIndex ? 'bg-[var(--color-info)] text-white border-[var(--color-info)]' : pensioner[f.key].trim() ? 'border-[var(--color-success)] text-[var(--color-success)]' : 'border-[var(--color-border)] text-slate-600'}`}
+                    aria-current={i === fieldIndex}>
+                    {i + 1}. {t(f.labelKey)}
+                  </button>
+                ))}
+              </div>
+              <FieldBlock field={FIELDS[fieldIndex]} />
+              <div className="flex justify-between items-center gap-3 pt-2">
+                <button onClick={() => setFieldIndex((i) => Math.max(0, i - 1))} disabled={fieldIndex === 0}
+                  className="px-6 py-3 rounded-lg font-bold border border-[var(--color-border)] disabled:opacity-40">{t('gen_prev_field')}</button>
+                {fieldIndex < FIELDS.length - 1 ? (
+                  <button onClick={() => setFieldIndex((i) => i + 1)} className="btn-primary px-8 py-3 rounded-lg font-bold">{t('gen_next_field')}</button>
+                ) : (
+                  <button onClick={continueToReview} disabled={!faceVerified}
+                    className="btn-primary px-8 py-3 rounded-lg font-bold disabled:opacity-50">{t('gen_continue_review')}</button>
+                )}
+              </div>
+              <p className="text-xs text-[var(--color-muted)]">{t('gen_back_safe')}</p>
+            </div>
+          )}
+
+          {/* All-fields mode */}
+          {!singleField && (
+            <div className="bg-white border border-[var(--color-border)] rounded-lg p-6 sm:p-8 space-y-6">
+              {FIELDS.map((f) => <FieldBlock key={f.key} field={f} />)}
+            </div>
+          )}
 
           {/* Face verification */}
           <div className="bg-white border border-[var(--color-border)] rounded-lg p-6 sm:p-8 space-y-4">
@@ -405,18 +519,33 @@ export default function GeneratePramaan() {
               <div className="bg-[var(--color-success)] text-white p-3 rounded-lg text-sm font-bold flex items-center gap-2"><CheckCircle2 className="w-5 h-5" aria-hidden="true" />{t('gen_face_ok')}</div>
             )}
 
-            <button onClick={handleCapture} disabled={faceVerified}
-              className="btn-primary w-full sm:w-auto text-lg px-8 py-4 rounded-lg disabled:opacity-50 inline-flex items-center justify-center gap-2">
-              <Camera className="w-5 h-5" aria-hidden="true" />{t('gen_capture')}
-            </button>
+            <div className="flex flex-wrap items-center gap-3">
+              <button onClick={handleCapture} disabled={faceVerified}
+                className="btn-primary w-full sm:w-auto text-lg px-8 py-4 rounded-lg disabled:opacity-50 inline-flex items-center justify-center gap-2">
+                <Camera className="w-5 h-5" aria-hidden="true" />{t('gen_capture')}
+              </button>
+              <button onClick={() => setPractice((p) => !p)} aria-pressed={practice}
+                className={`px-5 py-3 rounded-lg font-bold border ${practice ? 'bg-[var(--color-warn-bg)] border-[var(--color-warn)]' : 'border-[var(--color-border)]'}`}>
+                {t('gen_practice')}
+              </button>
+            </div>
+            {practice && (
+              <div className="space-y-2">
+                <button onClick={handlePractice} className="border border-[var(--color-border)] px-5 py-3 rounded-lg font-bold inline-flex items-center gap-2">
+                  <RefreshCw className="w-5 h-5" aria-hidden="true" />{t('gen_practice_btn')}
+                </button>
+                {practiceDone && <p className="text-sm text-[var(--color-muted)]">{t('gen_practice_note')}</p>}
+              </div>
+            )}
           </div>
 
           {error && <p role="alert" className="text-sm font-bold text-[var(--color-danger)] bg-[var(--color-danger-bg)] border border-[var(--color-danger)]/20 px-4 py-3 rounded-lg">{error}</p>}
 
           <div className="flex justify-between items-center pt-2">
             <button onClick={switchOperator} className="px-6 py-3 rounded-lg font-bold text-[var(--color-muted)] hover:bg-slate-100">{t('back')}</button>
-            <button onClick={continueToReview} disabled={!faceVerified}
-              className="btn-primary text-lg px-10 py-4 rounded-lg disabled:opacity-50">{t('gen_continue_review')}</button>
+            {singleField
+              ? <button onClick={continueToReview} disabled={!faceVerified} className="btn-primary text-lg px-10 py-4 rounded-lg disabled:opacity-50">{t('gen_continue_review')}</button>
+              : <button onClick={continueToReview} disabled={!faceVerified} className="btn-primary text-lg px-10 py-4 rounded-lg disabled:opacity-50">{t('gen_continue_review')}</button>}
           </div>
         </div>
       )}
@@ -442,8 +571,8 @@ export default function GeneratePramaan() {
 
           <ReviewTable title={t('gen_review_pension')} onEdit={() => setStep('pensioner')} rows={[
             [t('gen_ppo'), pensioner.ppo],
-            [t('gen_authority'), authorities.find((a) => a.value === pensioner.authority)?.label || '—'],
-            [t('gen_pension_type'), pensionTypes.find((a) => a.value === pensioner.pensionType)?.label || '—'],
+            [t('gen_authority'), authorities.find((a) => a.value === pensioner.authority)?.labelKey ? t(authorities.find((a) => a.value === pensioner.authority)!.labelKey) : '—'],
+            [t('gen_pension_type'), pensionTypes.find((a) => a.value === pensioner.pensionType)?.labelKey ? t(pensionTypes.find((a) => a.value === pensioner.pensionType)!.labelKey) : '—'],
             [t('gen_pda'), pensioner.pda],
             [t('gen_country'), pensioner.country],
             [t('gen_state'), pensioner.state],
@@ -465,8 +594,9 @@ export default function GeneratePramaan() {
 
           <div className="flex justify-between items-center pt-2">
             <button onClick={() => setStep('pensioner')} className="px-6 py-3 rounded-lg font-bold text-[var(--color-muted)] hover:bg-slate-100">{t('back')}</button>
-            <button onClick={handleConfirm} className="btn-primary text-lg px-10 py-4 rounded-lg">{t('gen_submit')}</button>
+            <button onClick={onConfirmClick} className="btn-primary text-lg px-10 py-4 rounded-lg">{t('gen_submit')}</button>
           </div>
+          <p className="text-xs text-[var(--color-muted)]">{t('gen_back_safe')}</p>
         </div>
       )}
 
@@ -498,6 +628,11 @@ export default function GeneratePramaan() {
             </div>
           </div>
 
+          <div className="bg-[var(--color-bg)] border border-[var(--color-border)] rounded-lg p-6">
+            <h4 className="font-bold">{t('gen_expect_next')}</h4>
+            <p className="text-[var(--color-muted)] mt-2 leading-relaxed">{t('gen_expect_next_desc')}</p>
+          </div>
+
           {sessionList.length > 0 && (
             <div className="bg-[var(--color-bg)] border border-[var(--color-border)] rounded-lg p-6">
               <h4 className="font-bold">{t('gen_session_table')}</h4>
@@ -525,6 +660,22 @@ export default function GeneratePramaan() {
           <div className="flex flex-wrap gap-3">
             <button onClick={addAnother} className="bg-white border-2 border-[var(--color-info)] text-[var(--color-info)] font-bold px-6 py-3 rounded-lg inline-flex items-center gap-2"><Plus className="w-5 h-5" aria-hidden="true" />{t('gen_add_another')}</button>
             <button onClick={cancel} className="bg-slate-900 text-white font-bold px-6 py-3 rounded-lg inline-flex items-center gap-2"><Home className="w-5 h-5" aria-hidden="true" />{t('gen_finish_home')}</button>
+          </div>
+        </div>
+      )}
+
+      {/* Confirmation prompt */}
+      {confirmOpen && (
+        <div role="dialog" aria-modal="true" className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+          <div className="bg-white rounded-lg p-6 max-w-md w-full text-left">
+            <h2 className="font-bold text-xl text-[var(--color-text)]">
+              {t('gen_confirm_prefix')} {pensioner.name}. {t('gen_confirm_q')}
+            </h2>
+            <div className="flex gap-3 mt-5">
+              <button onClick={() => { setConfirmOpen(false); handleConfirm(); }} className="btn-primary flex-1 px-6 py-4 rounded-lg font-bold">{t('gen_yes_submit')}</button>
+              <button onClick={() => setConfirmOpen(false)} className="flex-1 px-6 py-4 rounded-lg font-bold border border-[var(--color-border)]">{t('gen_goback')}</button>
+            </div>
+            <p className="text-xs text-[var(--color-muted)] mt-3">{t('gen_back_safe')}</p>
           </div>
         </div>
       )}

@@ -1,12 +1,13 @@
 import React, { useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { useStore } from '../../store/useStore';
-import { CheckCircle2, XCircle, Clock } from 'lucide-react';
+import { CheckCircle2, XCircle, Clock, Play } from 'lucide-react';
 import { useTranslation } from '../../i18n/useTranslation';
 import { useAria } from '../../store/useAriaStore';
 import { usePageLoad } from '../../lib/usePageLoad';
 import { PageLoader } from '../../components/ui/Loading';
 import { ErrorState } from '../../components/ui/ErrorState';
+import { ReminderStub } from '../../components/ui/Reminder';
 
 const faqs = [
   { qEn: 'Do I need to install any app or software to use this?', qHi: 'क्या इसका उपयोग करने के लिए मुझे कोई ऐप या सॉफ़्टवेयर इंस्टॉल करने की ज़रूरत है?', aEn: 'No. This portal works entirely through your web browser using your device\'s camera. There is nothing to download or install before you begin.', aHi: 'नहीं। यह पोर्टल पूरी तरह से आपके वेब ब्राउज़र और डिवाइस के कैमरे के ज़रिए काम करता है। शुरू करने से पहले डाउनलोड या इंस्टॉल करने के लिए कुछ नहीं है।' },
@@ -94,6 +95,16 @@ export default function PensionerDashboard() {
           <span className="font-bold text-lg text-left">{t('renew_lc')}</span>
         </Link>
       </div>
+
+      <div className="bg-white border border-[var(--color-border)] rounded-lg p-6 sm:p-8 text-left">
+        <h3 className="text-left font-bold text-lg">{t('video_title')}</h3>
+        <p className="text-[var(--color-muted)] mt-1">{t('video_desc')}</p>
+        <div className="mt-4 aspect-video rounded-lg bg-slate-900 flex items-center justify-center" role="img" aria-label={t('video_title')}>
+          <Play className="w-12 h-12 text-white/80" aria-hidden="true" />
+        </div>
+      </div>
+
+      <ReminderStub />
 
       {(latestDlc?.status === 'Rejected' || (hasHeldPayment && !isDlcValidOrProcessing)) && (
         <div className="bg-white border border-[var(--color-danger)]/30 rounded-lg p-6 text-left">

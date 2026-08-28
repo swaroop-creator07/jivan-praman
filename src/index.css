@@ -178,3 +178,19 @@
   .faq-item summary:hover { color: var(--color-info); }
   .faq-item p { margin: 0.75em 0 0 0; font-family: var(--font-ui); color: var(--color-text); font-size: 1rem; line-height: 1.6; }
 }
+
+/* Elder-friendly, touch-friendly tap targets */
+button, input, select, textarea { min-height: 56px; }
+.btn-primary, a.btn-primary { min-height: 56px; display: inline-flex; align-items: center; justify-content: center; }
+.glossary-pop {
+  position: absolute; z-index: 30; top: 100%; left: 0; margin-top: 6px;
+  width: min(320px, 80vw); background: #fff; color: var(--color-text);
+  border: 2px solid var(--color-info); border-radius: 12px; padding: 14px 16px;
+  font-family: var(--font-ui); font-size: 1rem; line-height: 1.5; box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+}
+.help-panel {
+  position: fixed; right: 16px; bottom: 84px; z-index: 50; width: min(340px, 90vw);
+  background: #fff; border: 2px solid var(--color-info); border-radius: 14px; padding: 18px;
+  box-shadow: 0 16px 40px rgba(0,0,0,0.22);
+}
+.countdown-banner { background: var(--color-info); color: #fff; }

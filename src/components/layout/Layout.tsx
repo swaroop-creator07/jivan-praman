@@ -8,6 +8,9 @@ import { Shield, Menu, X, Globe } from 'lucide-react';
 import { Breadcrumbs } from '../ui/Breadcrumbs';
 import { PageLoader } from '../ui/Loading';
 import { ErrorBoundary } from './ErrorBoundary';
+import { ReadAloud } from '../ui/ReadAloud';
+import { HelpButton } from '../ui/HelpButton';
+import { CountdownBanner } from './CountdownBanner';
 
 export const Layout: React.FC = () => {
   const { setFontSize, fontSize, language, setLanguage } = useUIStore();
@@ -76,10 +79,11 @@ export const Layout: React.FC = () => {
               </Link>
             ))}
             <div className="flex items-center gap-1 border-l border-slate-200 pl-4" role="group" aria-label={t('font_size')}>
-              <button onClick={() => setFontSize('small')} aria-pressed={fontSize === 'small'} aria-label="A- small text" className={`w-9 h-9 rounded-lg font-bold ${fontSize === 'small' ? 'bg-[var(--color-info)] text-white' : 'text-slate-600 hover:bg-slate-100'}`}>A-</button>
-              <button onClick={() => setFontSize('base')} aria-pressed={fontSize === 'base'} aria-label="A default text" className={`w-9 h-9 rounded-lg font-bold ${fontSize === 'base' ? 'bg-[var(--color-info)] text-white' : 'text-slate-600 hover:bg-slate-100'}`}>A</button>
-              <button onClick={() => setFontSize('large')} aria-pressed={fontSize === 'large'} aria-label="A+ large text" className={`w-9 h-9 rounded-lg font-bold ${fontSize === 'large' ? 'bg-[var(--color-info)] text-white' : 'text-slate-600 hover:bg-slate-100'}`}>A+</button>
-            </div>
+               <button onClick={() => setFontSize('small')} aria-pressed={fontSize === 'small'} aria-label="A- small text" className={`w-9 h-9 rounded-lg font-bold ${fontSize === 'small' ? 'bg-[var(--color-info)] text-white' : 'text-slate-600 hover:bg-slate-100'}`}>A-</button>
+               <button onClick={() => setFontSize('base')} aria-pressed={fontSize === 'base'} aria-label="A default text" className={`w-9 h-9 rounded-lg font-bold ${fontSize === 'base' ? 'bg-[var(--color-info)] text-white' : 'text-slate-600 hover:bg-slate-100'}`}>A</button>
+               <button onClick={() => setFontSize('large')} aria-pressed={fontSize === 'large'} aria-label="A+ large text" className={`w-9 h-9 rounded-lg font-bold ${fontSize === 'large' ? 'bg-[var(--color-info)] text-white' : 'text-slate-600 hover:bg-slate-100'}`}>A+</button>
+               <ReadAloud />
+             </div>
           </nav>
 
           {/* Mobile Menu Button */}
@@ -106,12 +110,13 @@ export const Layout: React.FC = () => {
                   {item.name}
                 </Link>
               ))}
-              <div className="flex items-center gap-2 border-t border-slate-100 pt-4" role="group" aria-label={t('font_size')}>
-                <span className="text-sm font-bold text-slate-500 mr-2">{t('font_size')}:</span>
-                <button onClick={() => setFontSize('small')} aria-pressed={fontSize === 'small'} className={`w-10 h-10 rounded-lg font-bold ${fontSize === 'small' ? 'bg-[var(--color-info)] text-white' : 'bg-slate-100 text-slate-700'}`}>A-</button>
-                <button onClick={() => setFontSize('base')} aria-pressed={fontSize === 'base'} className={`w-10 h-10 rounded-lg font-bold ${fontSize === 'base' ? 'bg-[var(--color-info)] text-white' : 'bg-slate-100 text-slate-700'}`}>A</button>
-                <button onClick={() => setFontSize('large')} aria-pressed={fontSize === 'large'} className={`w-10 h-10 rounded-lg font-bold ${fontSize === 'large' ? 'bg-[var(--color-info)] text-white' : 'bg-slate-100 text-slate-700'}`}>A+</button>
-              </div>
+               <div className="flex items-center gap-2 border-t border-slate-100 pt-4" role="group" aria-label={t('font_size')}>
+                 <span className="text-sm font-bold text-slate-500 mr-2">{t('font_size')}:</span>
+                 <button onClick={() => setFontSize('small')} aria-pressed={fontSize === 'small'} className={`w-10 h-10 rounded-lg font-bold ${fontSize === 'small' ? 'bg-[var(--color-info)] text-white' : 'bg-slate-100 text-slate-700'}`}>A-</button>
+                 <button onClick={() => setFontSize('base')} aria-pressed={fontSize === 'base'} className={`w-10 h-10 rounded-lg font-bold ${fontSize === 'base' ? 'bg-[var(--color-info)] text-white' : 'bg-slate-100 text-slate-700'}`}>A</button>
+                 <button onClick={() => setFontSize('large')} aria-pressed={fontSize === 'large'} className={`w-10 h-10 rounded-lg font-bold ${fontSize === 'large' ? 'bg-[var(--color-info)] text-white' : 'bg-slate-100 text-slate-700'}`}>A+</button>
+                 <ReadAloud />
+               </div>
             </div>
           )}
         <div className="tricolor-strip">
@@ -121,8 +126,9 @@ export const Layout: React.FC = () => {
         </div>
       </header>
 
-      <Breadcrumbs />
-      <main id="main-content" tabIndex={-1} className="flex-1 max-w-[1100px] w-full mx-auto p-4 sm:p-6 lg:p-8 flex flex-col outline-none">
+       <Breadcrumbs />
+       <CountdownBanner />
+       <main id="main-content" tabIndex={-1} className="flex-1 max-w-[1100px] w-full mx-auto p-4 sm:p-6 lg:p-8 flex flex-col outline-none">
         <ErrorBoundary>
           <Suspense fallback={<PageLoader message="Loading page…" />}>
             <Outlet />
@@ -157,10 +163,11 @@ export const Layout: React.FC = () => {
                 <a href="#" className="text-[var(--color-info)] hover:underline underline-offset-4">{t('footer_accessibility')}</a>
                 <a href="#" className="text-[var(--color-info)] hover:underline underline-offset-4">{t('footer_sitemap')}</a>
               </nav>
-              <p className="text-xs text-slate-400">{t('footer_helpline')}</p>
-            </div>
-         </div>
-      </footer>
-    </div>
-  );
+               <p className="text-xs text-slate-400">{t('footer_helpline')}</p>
+             </div>
+          </div>
+       </footer>
+       <HelpButton />
+     </div>
+   );
 };
