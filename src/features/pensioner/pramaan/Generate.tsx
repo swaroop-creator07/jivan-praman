@@ -72,9 +72,11 @@ export default function GeneratePramaan() {
   const [verifying, setVerifying] = useState(false);
 
   const videoRef = useRef<HTMLVideoElement>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const bankRef = useRef<HTMLInputElement>(null);
   const stepRef = useRef<HTMLHeadingElement>(null);
+  const [photo, setPhoto] = useState<string | null>(null);
 
   useEffect(() => { stepRef.current?.focus(); }, [step]);
 
@@ -144,11 +146,20 @@ export default function GeneratePramaan() {
 
   const switchOperator = () => {
     setOperator((o) => ({ ...o, verified: false, otp: '', otpSent: false }));
-    setFaceAttempts(0); setFaceTip(0); setFaceVerified(false);
+    setFaceAttempts(0); setFaceTip(0); setFaceVerified(false); setPhoto(null);
     setStep('operator');
   };
 
   const handleCapture = () => {
+    const video = videoRef.current;
+    const canvas = canvasRef.current;
+    if (video && canvas && video.videoWidth) {
+      canvas.width = video.videoWidth;
+      canvas.height = video.videoHeight;
+      const ctx = canvas.getContext('2d');
+      ctx?.drawImage(video, 0, 0, canvas.width, canvas.height);
+      setPhoto(canvas.toDataURL('image/png'));
+    }
     const next = faceAttempts + 1;
     setFaceAttempts(next);
     if (next >= 3) { setFaceVerified(true); setFaceTip(0); }
@@ -188,7 +199,7 @@ export default function GeneratePramaan() {
 
   const addAnother = () => {
     setPensioner(emptyPensioner);
-    setFaceAttempts(0); setFaceTip(0); setFaceVerified(false);
+    setFaceAttempts(0); setFaceTip(0); setFaceVerified(false); setPhoto(null);
     setDiag(false); setError('');
     setStep('pensioner');
   };
@@ -372,6 +383,14 @@ export default function GeneratePramaan() {
             <div className="bg-slate-900 rounded-lg flex items-center justify-center min-h-[240px] overflow-hidden">
               <video ref={videoRef} className="w-full max-w-sm" muted playsInline aria-hidden="true" />
             </div>
+
+            {photo && (
+              <div className="flex items-center gap-4 bg-[var(--color-bg)] border border-[var(--color-border)] rounded-lg p-4">
+                <img src={photo} alt="Captured face photo (not stored)" className="w-24 h-24 object-cover rounded-lg border border-[var(--color-border)]" />
+                <p className="text-sm text-[var(--color-muted)]">{t('gen_photo_note')}</p>
+              </div>
+            )}
+            <canvas ref={canvasRef} className="hidden" aria-hidden="true" />
 
             {faceTip === 1 && (
               <div role="alert" className="bg-[var(--color-danger-bg)] border border-[var(--color-danger)] text-[var(--color-danger)] p-3 rounded-lg text-sm font-bold">{t('gen_face_tip1')}</div>

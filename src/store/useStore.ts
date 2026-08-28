@@ -48,18 +48,18 @@ const mockPensioner: Pensioner = {
   mobileNumber: 'XXXXX X9876',
   dlcHistory: [
     {
-      pramaanId: '9876543210',
-      generatedOn: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], // 7 days ago
-      status: 'Rejected',
-      rejectionReason: 'The PPO number on your certificate doesn\'t match your bank\'s records',
-      validUntil: null,
-    },
-    {
       pramaanId: '1234567890',
       generatedOn: '2025-06-10',
       status: 'Approved',
       rejectionReason: null,
       validUntil: '2026-06-30',
+    },
+    {
+      pramaanId: '9876543210',
+      generatedOn: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], // 7 days ago
+      status: 'Rejected',
+      rejectionReason: 'The PPO number on your certificate doesn\'t match your bank\'s records',
+      validUntil: null,
     }
   ],
   pensionPayments: [
@@ -156,6 +156,6 @@ export const useStore = create<StoreState>()(
       approveVerification: () => {},
       rejectVerification: () => {},
     }),
-    { name: 'updp-pensioner-v3' }
+    { name: 'updp-pensioner-v4' }
   )
 );
