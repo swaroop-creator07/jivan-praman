@@ -1,0 +1,180 @@
+@import "tailwindcss";
+
+@theme {
+  --font-serif: 'Noto Serif', 'Noto Sans Devanagari', Georgia, serif;
+  --font-sans: 'Noto Sans', 'Noto Sans Devanagari', Arial, sans-serif;
+  --font-body: 'Noto Serif', 'Noto Sans Devanagari', Georgia, serif;
+  --font-ui: 'Noto Sans', 'Noto Sans Devanagari', Arial, sans-serif;
+
+  --color-bg: #FAFAF7;
+  --color-surface: #FFFFFF;
+  --color-text: #1A1A1A;
+  --color-muted: #54524B;
+  --color-border: #D8D5CB;
+  --color-primary: #FF9933;
+  --color-primary-text: #1A1A1A;
+  --color-success: #138808;
+  --color-success-text: #FFFFFF;
+  --color-info: #000080;
+  --color-danger: #B3261E;
+  --color-danger-bg: #FCEBEA;
+  --color-warn: #8A5300;
+  --color-warn-bg: #FFF3DF;
+
+  /* Overrides for existing utility classes to map to new theme */
+  --color-indigo-50: var(--color-bg);
+  --color-indigo-100: var(--color-border);
+  --color-indigo-200: var(--color-border);
+  --color-indigo-300: var(--color-info);
+  --color-indigo-400: var(--color-info);
+  --color-indigo-500: var(--color-info);
+  --color-indigo-600: var(--color-info);
+  --color-indigo-700: #00004d;
+  --color-indigo-800: var(--color-text);
+  --color-indigo-900: var(--color-text);
+
+  --color-slate-50: var(--color-bg);
+  --color-slate-100: var(--color-bg);
+  --color-slate-200: var(--color-border);
+  --color-slate-300: var(--color-border);
+  --color-slate-400: var(--color-muted);
+  --color-slate-500: var(--color-muted);
+  --color-slate-600: var(--color-text);
+  --color-slate-700: var(--color-text);
+  --color-slate-800: var(--color-text);
+  --color-slate-900: var(--color-text);
+
+  --color-rose-50: var(--color-danger-bg);
+  --color-rose-100: var(--color-danger-bg);
+  --color-rose-300: var(--color-danger);
+  --color-rose-600: var(--color-danger);
+  --color-rose-800: var(--color-danger);
+  --color-rose-900: var(--color-danger);
+
+  --color-amber-50: var(--color-warn-bg);
+  --color-amber-100: var(--color-warn-bg);
+  --color-amber-300: var(--color-warn);
+  --color-amber-700: var(--color-warn);
+  --color-amber-800: var(--color-warn);
+  --color-amber-900: var(--color-warn);
+}
+
+@layer base {
+  html { font-size: 18px; -webkit-text-size-adjust: 100%; }
+  *, *::before, *::after { box-sizing: border-box; }
+  body {
+    background-color: var(--color-bg);
+    color: var(--color-text);
+    font-family: var(--font-body);
+    line-height: 1.6;
+    text-align: left;
+  }
+  h1 { font-family: var(--font-body); font-weight: 700; font-size: 32px; line-height: 1.25; }
+  h2 { font-family: var(--font-body); font-weight: 700; font-size: 26px; line-height: 1.3; }
+  h3 { font-family: var(--font-body); font-weight: 500; font-size: 22px; line-height: 1.35; }
+  h4, h5, h6 { font-family: var(--font-body); font-weight: 700; }
+  button, input, select, textarea, .ui-text, nav {
+    font-family: var(--font-ui);
+  }
+  *:focus-visible {
+    outline: 3px solid var(--color-info) !important;
+    outline-offset: 2px !important;
+  }
+  img, svg, video, canvas { max-width: 100%; height: auto; }
+  input, select, textarea { max-width: 100%; }
+  @media (max-width: 640px) {
+    h1 { font-size: 26px; }
+    h2 { font-size: 22px; }
+    h3 { font-size: 18px; }
+  }
+}
+
+@layer components {
+  .btn-primary {
+    background-color: var(--color-primary);
+    color: var(--color-primary-text);
+    font-weight: 700;
+    padding: 0.75rem 1.5rem;
+    border-radius: 0.5rem;
+    transition: background-color 0.2s;
+  }
+  .btn-primary:hover {
+    background-color: #E68A2E;
+  }
+  .btn-secondary {
+    background-color: var(--color-surface);
+    color: var(--color-text);
+    font-weight: 700;
+    padding: 0.75rem 1.5rem;
+    border-radius: 0.5rem;
+    border: 1px solid var(--color-border);
+    transition: background-color 0.2s;
+  }
+  .btn-secondary:hover {
+    background-color: #F8FAFC;
+  }
+  .btn-success {
+    background-color: var(--color-success);
+    color: var(--color-success-text);
+    font-weight: 700;
+    padding: 0.75rem 1.5rem;
+    border-radius: 0.5rem;
+    transition: background-color 0.2s;
+  }
+  .btn-success:hover {
+    background-color: #0F6B06;
+  }
+  .btn-link {
+    color: var(--color-info);
+    font-weight: 700;
+  }
+  .card {
+    background-color: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: 8px;
+    padding: 1.75em;
+  }
+  .card-compact {
+    background-color: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: 8px;
+    padding: 1rem;
+  }
+  .tricolor-strip {
+    display: flex;
+    height: 6px;
+    width: 100%;
+  }
+  .tricolor-strip > div {
+    flex: 1;
+  }
+  .tricolor-saffron { background-color: var(--color-primary); }
+  .tricolor-white { background-color: #FFFFFF; }
+  .tricolor-green { background-color: var(--color-success); }
+  @keyframes shimmer { 0% { transform: translateX(-100%); } 100% { transform: translateX(200%); } }
+
+  .faq-list { margin-top: 0; }
+  .faq-item { border-bottom: 1px solid var(--color-border); padding: 1em 0; }
+  .faq-item:last-child { border-bottom: none; }
+  .faq-item summary {
+    font-family: var(--font-ui);
+    font-weight: 700;
+    cursor: pointer;
+    padding: 0.25em 2em 0.25em 0;
+    list-style: none;
+    position: relative;
+  }
+  .faq-item summary::-webkit-details-marker { display: none; }
+  .faq-item summary::after {
+    content: "+";
+    position: absolute;
+    right: 0;
+    top: 0.15em;
+    font-size: 1.3em;
+    color: var(--color-info);
+    font-weight: 700;
+  }
+  .faq-item[open] summary::after { content: "\2212"; }
+  .faq-item summary:hover { color: var(--color-info); }
+  .faq-item p { margin: 0.75em 0 0 0; font-family: var(--font-ui); color: var(--color-text); font-size: 1rem; line-height: 1.6; }
+}
