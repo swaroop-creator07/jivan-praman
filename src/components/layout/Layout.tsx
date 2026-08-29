@@ -4,7 +4,7 @@ import { useStore } from '../../store/useStore';
 import { useUIStore } from '../../store/useUIStore';
 import { useTranslation } from '../../i18n/useTranslation';
 import { useAria } from '../../store/useAriaStore';
-import { Shield, Menu, X, Globe } from 'lucide-react';
+import { Menu, X, Globe } from 'lucide-react';
 import { Breadcrumbs } from '../ui/Breadcrumbs';
 import { PageLoader } from '../ui/Loading';
 import { ErrorBoundary } from './ErrorBoundary';
@@ -55,9 +55,6 @@ export const Layout: React.FC = () => {
 
         <div className="max-w-[1100px] mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between gap-4">
           <Link to="/" className="flex items-center gap-3 min-w-0" onClick={() => setMobileMenuOpen(false)}>
-            <div className="flex items-center justify-center h-12 w-12 bg-white rounded-md shrink-0">
-               <img src="https://upload.wikimedia.org/wikipedia/commons/5/55/Emblem_of_India.svg" alt="State Emblem of India" className="h-10 w-auto object-contain" />
-            </div>
             <div className="min-w-0">
               <div className="flex items-center gap-2 flex-wrap">
                 <h1 className="font-bold text-xl tracking-tight text-[var(--color-text)] leading-tight">UPDP</h1>
@@ -135,39 +132,8 @@ export const Layout: React.FC = () => {
           </Suspense>
         </ErrorBoundary>
       </main>
-      
-      <footer className="bg-white border-t border-slate-200 py-10 mt-12 shrink-0">
-         <div className="max-w-[1100px] mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="flex flex-col gap-6">
-              <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-6 pb-6 border-b border-slate-200">
-                <div className="text-left">
-                  <div className="flex items-center gap-2 font-bold uppercase tracking-wider text-slate-500 text-xs">
-                    <Shield className="w-4 h-4 text-slate-400" aria-hidden="true" />
-                    <span>Unified Pension Delivery Platform</span>
-                  </div>
-                  <p className="text-sm text-slate-600 mt-2 max-w-xl leading-relaxed">
-                    {t('footer_tagline')}
-                  </p>
-                  <p className="text-xs text-slate-500 mt-2 font-semibold">{t('footer_last_updated')}: {new Date().toLocaleDateString(language === 'hi' ? 'hi-IN' : 'en-IN', { year: 'numeric', month: 'long', day: 'numeric' })}</p>
-                </div>
-                <div className="shrink-0 flex items-center gap-3">
-                  <img src="https://upload.wikimedia.org/wikipedia/commons/5/55/Emblem_of_India.svg" alt="" aria-hidden="true" className="h-8 w-auto opacity-40" />
-                  <span className="text-xs font-bold uppercase tracking-widest text-slate-400">Government of India</span>
-                </div>
-              </div>
-              <nav aria-label="Footer" className="flex flex-wrap gap-x-6 gap-y-2 text-sm font-bold">
-                <a href="mailto:jeevanpramaan@gov.in" className="text-[var(--color-info)] hover:underline underline-offset-4">{t('footer_contact')}</a>
-                <a href="#" className="text-[var(--color-info)] hover:underline underline-offset-4">{t('footer_feedback')}</a>
-                <a href="https://india.gov.in" target="_blank" rel="noreferrer" className="text-[var(--color-info)] hover:underline underline-offset-4">{t('footer_india')}</a>
-                <a href="#" className="text-[var(--color-info)] hover:underline underline-offset-4">{t('footer_terms')}</a>
-                <a href="#" className="text-[var(--color-info)] hover:underline underline-offset-4">{t('footer_accessibility')}</a>
-                <a href="#" className="text-[var(--color-info)] hover:underline underline-offset-4">{t('footer_sitemap')}</a>
-              </nav>
-               <p className="text-xs text-slate-400">{t('footer_helpline')}</p>
-             </div>
-          </div>
-       </footer>
-       <HelpButton />
+
+        <HelpButton />
      </div>
    );
 };
