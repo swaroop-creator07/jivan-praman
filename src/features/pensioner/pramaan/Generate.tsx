@@ -140,6 +140,51 @@ function OtpInput({ value, onChange, length = 6 }: { value: string; onChange: (v
   );
 }
 
+function labelNode(field: FieldDef, t: (k: string) => string) {
+  return field.glossary ? <Glossary term={field.glossary}>{t(field.labelKey)}</Glossary> : t(field.labelKey);
+}
+
+function renderControl(field: FieldDef, value: string, set: (v: string) => void, t: (k: string) => string) {
+  if (field.type === 'select') {
+    if (field.options!.length === 2) {
+      return (
+        <div className="flex flex-wrap gap-3" role="radiogroup" aria-label={t(field.labelKey)}>
+          {field.options!.map((o) => (
+            <label key={o.value} className={`flex items-center gap-2 px-4 py-3 rounded-lg border-2 cursor-pointer font-bold ${value === o.value ? 'border-[var(--color-info)] bg-[var(--color-info)]/5 text-[var(--color-info)]' : 'border-slate-300 text-slate-700'}`}>
+              <input type="radio" name={`f-${field.key}`} value={o.value} checked={value === o.value} onChange={(e) => set(e.target.value)} className="w-5 h-5 accent-[var(--color-info)]" />
+              {t(o.labelKey)}
+            </label>
+          ))}
+        </div>
+      );
+    }
+    return (
+      <select id={`f-${field.key}`} value={value} onChange={(e) => set(e.target.value)} className={inputCls}>
+        <option value="">—</option>
+        {field.options!.map((o) => <option key={o.value} value={o.value}>{t(o.labelKey)}</option>)}
+      </select>
+    );
+  }
+  if (field.key === 'aadhaar') {
+    return <input id={`f-${field.key}`} type="tel" inputMode="numeric" value={value} onChange={(e) => set(e.target.value.replace(/\D/g, '').slice(0, 12))} placeholder="1234 5678 9012" className={inputCls + ' font-mono'} />;
+  }
+  if (field.key === 'bank') {
+    return <input id={`f-${field.key}`} type="tel" inputMode="numeric" value={value} onChange={(e) => set(e.target.value.replace(/\D/g, '').slice(0, 18))} placeholder="Account number" className={inputCls + ' font-mono'} />;
+  }
+  const type = field.type === 'email' ? 'email' : 'text';
+  return <input id={`f-${field.key}`} type={type} value={value} onChange={(e) => set(e.target.value)} placeholder={field.key === 'name' ? 'e.g. Ramesh Kumar' : field.key === 'email' ? 'name@example.com' : field.key === 'state' ? 'e.g. Delhi' : ''} className={inputCls} />;
+}
+
+function FieldBlock({ field, value, onChange }: { field: FieldDef; value: string; onChange: (v: string) => void }) {
+  const { t } = useTranslation();
+  return (
+    <Field label={<LabelWithIcon icon={FIELD_ICONS[field.key]}>{labelNode(field, t)}</LabelWithIcon>} help={field.helpKey ? t(field.helpKey) : undefined} htmlFor={`f-${field.key}`}>
+      {renderControl(field, value, onChange, t)}
+      {field.key === 'bank' && <p className="text-sm font-semibold text-[var(--color-success)] mt-2">{t('gen_free_govt')}</p>}
+    </Field>
+  );
+}
+
 export default function GeneratePramaan() {
   const { t } = useTranslation();
   const navigate = useNavigate();
@@ -397,48 +442,6 @@ export default function GeneratePramaan() {
 
   const correctNow = () => { setDiag(false); setStep('pensioner'); setFocusBank(true); };
 
-  const renderControl = (field: FieldDef) => {
-    const val = pensioner[field.key];
-    const set = (v: string) => setPensioner((p) => ({ ...p, [field.key]: v }));
-    if (field.type === 'select') {
-      if (field.options!.length === 2) {
-        return (
-          <div className="flex flex-wrap gap-3" role="radiogroup" aria-label={t(field.labelKey)}>
-            {field.options!.map((o) => (
-              <label key={o.value} className={`flex items-center gap-2 px-4 py-3 rounded-lg border-2 cursor-pointer font-bold ${val === o.value ? 'border-[var(--color-info)] bg-[var(--color-info)]/5 text-[var(--color-info)]' : 'border-slate-300 text-slate-700'}`}>
-                <input type="radio" name={`f-${field.key}`} value={o.value} checked={val === o.value} onChange={(e) => set(e.target.value)} className="w-5 h-5 accent-[var(--color-info)]" />
-                {t(o.labelKey)}
-              </label>
-            ))}
-          </div>
-        );
-      }
-      return (
-        <select id={`f-${field.key}`} value={val} onChange={(e) => set(e.target.value)} className={inputCls}>
-          <option value="">—</option>
-          {field.options!.map((o) => <option key={o.value} value={o.value}>{t(o.labelKey)}</option>)}
-        </select>
-      );
-    }
-    if (field.key === 'aadhaar') {
-      return <input id={`f-${field.key}`} type="tel" inputMode="numeric" value={val} onChange={(e) => set(e.target.value.replace(/\D/g, '').slice(0, 12))} placeholder="1234 5678 9012" className={inputCls + ' font-mono'} />;
-    }
-    if (field.key === 'bank') {
-      return <input id={`f-${field.key}`} type="tel" inputMode="numeric" value={val} onChange={(e) => set(e.target.value.replace(/\D/g, '').slice(0, 18))} placeholder="Account number" className={inputCls + ' font-mono'} />;
-    }
-    const type = field.type === 'email' ? 'email' : 'text';
-    return <input id={`f-${field.key}`} type={type} value={val} onChange={(e) => set(e.target.value)} placeholder={field.key === 'name' ? 'e.g. Ramesh Kumar' : field.key === 'email' ? 'name@example.com' : field.key === 'state' ? 'e.g. Delhi' : ''} className={inputCls} />;
-  };
-
-  const labelNode = (field: FieldDef) =>
-    field.glossary ? <Glossary term={field.glossary}>{t(field.labelKey)}</Glossary> : t(field.labelKey);
-
-  const FieldBlock = ({ field }: { field: FieldDef; key?: string | number }) => (
-    <Field label={<LabelWithIcon icon={FIELD_ICONS[field.key]}>{labelNode(field)}</LabelWithIcon>} help={field.helpKey ? t(field.helpKey) : undefined} htmlFor={`f-${field.key}`}>
-      {renderControl(field)}
-      {field.key === 'bank' && <p className="text-sm font-semibold text-[var(--color-success)] mt-2">{t('gen_free_govt')}</p>}
-    </Field>
-  );
 
   return (
     <div className="max-w-3xl space-y-6 pb-16 text-left">
@@ -566,7 +569,7 @@ export default function GeneratePramaan() {
                   </button>
                 ))}
               </div>
-              <FieldBlock field={FIELDS[fieldIndex]} />
+              <FieldBlock field={FIELDS[fieldIndex]} value={pensioner[FIELDS[fieldIndex].key]} onChange={(v) => setPensioner((p) => ({ ...p, [FIELDS[fieldIndex].key]: v }))} />
               <div className="flex justify-between items-center gap-3 pt-2">
                 <button onClick={() => setFieldIndex((i) => Math.max(0, i - 1))} disabled={fieldIndex === 0}
                   className="px-6 py-3 rounded-lg font-bold border border-[var(--color-border)] disabled:opacity-40">{t('gen_prev_field')}</button>
@@ -584,7 +587,7 @@ export default function GeneratePramaan() {
           {/* All-fields mode */}
           {!singleField && (
             <div className="bg-white border border-[var(--color-border)] rounded-lg p-6 sm:p-8 space-y-6">
-              {FIELDS.map((f) => <FieldBlock key={f.key} field={f} />)}
+              {FIELDS.map((f) => <FieldBlock key={f.key} field={f} value={pensioner[f.key]} onChange={(v) => setPensioner((p) => ({ ...p, [f.key]: v }))} />)}
             </div>
           )}
 
