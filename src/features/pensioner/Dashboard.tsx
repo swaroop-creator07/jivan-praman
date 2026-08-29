@@ -1,7 +1,7 @@
 import React, { useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { useStore } from '../../store/useStore';
-import { CheckCircle2, XCircle, Clock, Play } from 'lucide-react';
+import { CheckCircle2, XCircle, Clock } from 'lucide-react';
 import { useTranslation } from '../../i18n/useTranslation';
 import { useAria } from '../../store/useAriaStore';
 import { usePageLoad } from '../../lib/usePageLoad';
@@ -97,14 +97,6 @@ export default function PensionerDashboard() {
         <Link to="/pramaan/history" className="bg-white p-6 rounded-lg border border-[var(--color-border)] hover:border-[var(--color-info)] flex items-center">
           <span className="font-bold text-lg text-left">{t('hist_link')}</span>
         </Link>
-      </div>
-
-      <div className="bg-white border border-[var(--color-border)] rounded-lg p-6 sm:p-8 text-left">
-        <h3 className="text-left font-bold text-lg">{t('video_title')}</h3>
-        <p className="text-[var(--color-muted)] mt-1">{t('video_desc')}</p>
-        <div className="mt-4 aspect-video rounded-lg bg-slate-900 flex items-center justify-center" role="img" aria-label={t('video_title')}>
-          <Play className="w-12 h-12 text-white/80" aria-hidden="true" />
-        </div>
       </div>
 
       {(latestDlc?.status === 'Rejected' || (hasHeldPayment && !isDlcValidOrProcessing)) && (
