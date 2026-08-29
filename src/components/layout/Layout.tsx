@@ -42,7 +42,6 @@ export const Layout: React.FC = () => {
 
   const navItems = [
     { name: t('home'), path: '/' },
-    { name: t('pramaan'), path: '/pramaan' },
     { name: t('payments'), path: '/payments' },
     { name: t('documents'), path: '/documents' },
     { name: t('help'), path: '/help' },
