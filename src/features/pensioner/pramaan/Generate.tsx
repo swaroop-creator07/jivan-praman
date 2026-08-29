@@ -177,9 +177,10 @@ function renderControl(field: FieldDef, value: string, set: (v: string) => void,
 
 function FieldBlock({ field, value, onChange }: { field: FieldDef; value: string; onChange: (v: string) => void }) {
   const { t } = useTranslation();
+  const demoKey = field.type === 'number' ? 'gen_demo_number' : field.type === 'select' ? 'gen_demo_hint' : 'gen_demo_name';
   return (
     <Field label={<LabelWithIcon icon={FIELD_ICONS[field.key]}>{labelNode(field, t)}</LabelWithIcon>} help={field.helpKey ? t(field.helpKey) : undefined} htmlFor={`f-${field.key}`}>
-      <p className="text-sm text-slate-500 mb-1">{t('gen_demo_hint')}</p>
+      <p className="text-sm text-slate-500 mb-1">{t(demoKey)}</p>
       {renderControl(field, value, onChange, t)}
       {field.key === 'bank' && <p className="text-sm font-semibold text-[var(--color-success)] mt-2">{t('gen_free_govt')}</p>}
     </Field>
@@ -485,14 +486,14 @@ export default function GeneratePramaan() {
 
           <div className="bg-white border border-[var(--color-border)] rounded-lg p-6 sm:p-8 space-y-6">
             <Field label={<LabelWithIcon icon={CreditCard}>{t('gen_operator_aadhaar')}</LabelWithIcon>} help={t('gen_operator_aadhaar_help')} htmlFor="opAadhaar">
-              <p className="text-sm text-slate-500 mb-1">{t('gen_demo_hint')}</p>
+              <p className="text-sm text-slate-500 mb-1">{t('gen_demo_number')}</p>
               <input id="opAadhaar" type="tel" inputMode="numeric" value={operator.aadhaar}
                 onChange={(e) => setOperator((o) => ({ ...o, aadhaar: e.target.value.replace(/\D/g, '').slice(0, 12) }))}
                 placeholder="1234 5678 9012" className={inputCls + ' font-mono'} />
             </Field>
 
             <Field label={<LabelWithIcon icon={Smartphone}>{t('gen_operator_mobile')}</LabelWithIcon>} help={t('gen_operator_mobile_help')} htmlFor="opMobile">
-              <p className="text-sm text-slate-500 mb-1">{t('gen_demo_hint')}</p>
+              <p className="text-sm text-slate-500 mb-1">{t('gen_demo_number')}</p>
               <input id="opMobile" type="tel" inputMode="numeric" value={operator.mobile}
                 onChange={(e) => setOperator((o) => ({ ...o, mobile: e.target.value.replace(/\D/g, '').slice(0, 10) }))}
                 placeholder="98765 43210" className={inputCls + ' font-mono'} />
@@ -511,7 +512,7 @@ export default function GeneratePramaan() {
               <div className="space-y-4 border-t border-[var(--color-border)] pt-6">
                 <p className="text-sm font-bold text-[var(--color-success)]">{t('gen_otp_sent_msg')} {operator.mobile.replace(/(\d{5})(\d{5})/, '$1 $2')}</p>
                 <Field label={<LabelWithIcon icon={KeyRound}>{t('gen_otp')}</LabelWithIcon>} help={t('gen_otp_help')} htmlFor="opOtp">
-                  <p className="text-sm text-slate-500 mb-1">{t('gen_demo_hint')}</p>
+                  <p className="text-sm text-slate-500 mb-1">{t('gen_demo_number')}</p>
                   <OtpInput value={operator.otp} onChange={(v) => setOperator((o) => ({ ...o, otp: v }))} />
                 </Field>
                 {error && <p role="alert" className="text-sm font-bold text-[var(--color-danger)] bg-[var(--color-danger-bg)] border border-[var(--color-danger)]/20 px-4 py-3 rounded-lg">{error}</p>}
