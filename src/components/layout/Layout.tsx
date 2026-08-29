@@ -56,71 +56,80 @@ export const Layout: React.FC = () => {
         {ariaMessage}
       </div>
       <header className="bg-white border-b border-slate-200 sticky top-0 z-50">
-        <div className="max-w-[1100px] mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between gap-4">
-          <Link to="/" className="flex items-center gap-3 min-w-0" onClick={() => setMobileMenuOpen(false)}>
-            <div className="min-w-0">
-              <div className="flex items-center gap-2 flex-wrap">
-                <h1 className="font-bold text-xl tracking-tight text-[var(--color-text)] leading-tight">UPDP</h1>
-                <span className="bg-[var(--color-primary)] text-[var(--color-primary-text)] text-[10px] font-bold uppercase tracking-widest px-2 py-0.5 rounded shrink-0">{t('prototype')}</span>
+        <div className="max-w-[1100px] mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="h-20 flex items-center justify-between gap-4">
+            <Link to="/" className="flex items-center gap-3 min-w-0" onClick={() => setMobileMenuOpen(false)}>
+              <div className="min-w-0">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <h1 className="font-bold text-xl tracking-tight text-[var(--color-text)] leading-tight">UPDP</h1>
+                  <span className="bg-[var(--color-primary)] text-[var(--color-primary-text)] text-[10px] font-bold uppercase tracking-widest px-2 py-0.5 rounded shrink-0">{t('prototype')}</span>
+                </div>
+                <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest leading-tight hidden sm:block">Unified Pension Delivery Platform</p>
               </div>
-              <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest leading-tight hidden sm:block">Unified Pension Delivery Platform</p>
+            </Link>
+
+            {/* Desktop Nav + utilities */}
+            <div className="hidden md:flex items-center gap-6">
+              <nav className="flex items-center gap-6">
+                {navItems.map(item => (
+                  <Link
+                    key={item.path}
+                    to={item.path}
+                    className={`text-sm font-bold transition-colors whitespace-nowrap ${location.pathname === item.path ? 'text-[var(--color-info)]' : 'text-slate-600 hover:text-[var(--color-info)]'}`}
+                  >
+                    {item.name}
+                  </Link>
+                ))}
+              </nav>
+              <div className="flex items-center gap-3 pl-6 border-l border-slate-200" role="group" aria-label={t('font_size')}>
+                <LangControl />
+                <div className="flex items-center gap-1">
+                  <button onClick={() => setFontSize('small')} aria-pressed={fontSize === 'small'} aria-label="A- small text" className={`w-9 h-9 rounded-lg font-bold ${fontSize === 'small' ? 'bg-[var(--color-info)] text-white' : 'text-slate-600 hover:bg-slate-100'}`}>A-</button>
+                  <button onClick={() => setFontSize('base')} aria-pressed={fontSize === 'base'} aria-label="A default text" className={`w-9 h-9 rounded-lg font-bold ${fontSize === 'base' ? 'bg-[var(--color-info)] text-white' : 'text-slate-600 hover:bg-slate-100'}`}>A</button>
+                  <button onClick={() => setFontSize('large')} aria-pressed={fontSize === 'large'} aria-label="A+ large text" className={`w-9 h-9 rounded-lg font-bold ${fontSize === 'large' ? 'bg-[var(--color-info)] text-white' : 'text-slate-600 hover:bg-slate-100'}`}>A+</button>
+                </div>
+                <ReadAloud />
+              </div>
             </div>
-          </Link>
 
-          {/* Desktop Nav */}
-          <nav className="hidden md:flex items-center gap-6">
-            {navItems.map(item => (
-              <Link 
-                key={item.path}
-                to={item.path} 
-                className={`text-sm font-bold transition-colors whitespace-nowrap ${location.pathname === item.path ? 'text-[var(--color-info)]' : 'text-slate-600 hover:text-[var(--color-info)]'}`}
-              >
-                {item.name}
-              </Link>
-            ))}
-            <div className="flex items-center gap-1 border-l border-slate-200 pl-4" role="group" aria-label={t('font_size')}>
-               <LangControl />
-               <button onClick={() => setFontSize('small')} aria-pressed={fontSize === 'small'} aria-label="A- small text" className={`w-9 h-9 rounded-lg font-bold ${fontSize === 'small' ? 'bg-[var(--color-info)] text-white' : 'text-slate-600 hover:bg-slate-100'}`}>A-</button>
-               <button onClick={() => setFontSize('base')} aria-pressed={fontSize === 'base'} aria-label="A default text" className={`w-9 h-9 rounded-lg font-bold ${fontSize === 'base' ? 'bg-[var(--color-info)] text-white' : 'text-slate-600 hover:bg-slate-100'}`}>A</button>
-               <button onClick={() => setFontSize('large')} aria-pressed={fontSize === 'large'} aria-label="A+ large text" className={`w-9 h-9 rounded-lg font-bold ${fontSize === 'large' ? 'bg-[var(--color-info)] text-white' : 'text-slate-600 hover:bg-slate-100'}`}>A+</button>
-               <ReadAloud />
-             </div>
-          </nav>
+            {/* Mobile Menu Button */}
+            <button
+              className="md:hidden p-2 text-slate-600 hover:bg-slate-100 rounded-lg shrink-0"
+              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+              aria-label="Toggle menu"
+              aria-expanded={mobileMenuOpen}
+            >
+              {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+            </button>
+          </div>
 
-          {/* Mobile Menu Button */}
-          <button 
-            className="md:hidden p-2 text-slate-600 hover:bg-slate-100 rounded-lg shrink-0"
-            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            aria-label="Toggle menu"
-            aria-expanded={mobileMenuOpen}
-          >
-            {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
-          </button>
-        </div>
-
-        {/* Mobile Nav Dropdown */}
-        {mobileMenuOpen && (
-          <div className="md:hidden absolute top-[104px] left-0 w-full bg-white border-b border-slate-200 shadow-lg px-4 py-4 flex flex-col gap-4">
+          {/* Mobile Nav */}
+          {mobileMenuOpen && (
+            <div className="md:hidden border-t border-slate-200 py-4 flex flex-col gap-4">
               {navItems.map(item => (
-                <Link 
+                <Link
                   key={item.path}
-                  to={item.path} 
+                  to={item.path}
                   onClick={() => setMobileMenuOpen(false)}
                   className={`p-3 rounded-lg font-bold text-lg ${location.pathname === item.path ? 'bg-slate-100 text-[var(--color-info)]' : 'text-slate-700 hover:bg-slate-50'}`}
                 >
                   {item.name}
                 </Link>
               ))}
-               <div className="flex items-center gap-2 border-t border-slate-100 pt-4" role="group" aria-label={t('font_size')}>
-                 <span className="text-sm font-bold text-slate-500 mr-2">{t('font_size')}:</span>
-                 <LangControl />
-                 <button onClick={() => setFontSize('small')} aria-pressed={fontSize === 'small'} className={`w-10 h-10 rounded-lg font-bold ${fontSize === 'small' ? 'bg-[var(--color-info)] text-white' : 'bg-slate-100 text-slate-700'}`}>A-</button>
-                 <button onClick={() => setFontSize('base')} aria-pressed={fontSize === 'base'} className={`w-10 h-10 rounded-lg font-bold ${fontSize === 'base' ? 'bg-[var(--color-info)] text-white' : 'bg-slate-100 text-slate-700'}`}>A</button>
-                 <button onClick={() => setFontSize('large')} aria-pressed={fontSize === 'large'} className={`w-10 h-10 rounded-lg font-bold ${fontSize === 'large' ? 'bg-[var(--color-info)] text-white' : 'bg-slate-100 text-slate-700'}`}>A+</button>
-                 <ReadAloud />
-               </div>
+              <div className="flex items-center gap-3 border-t border-slate-100 pt-4" role="group" aria-label={t('font_size')}>
+                <span className="text-sm font-bold text-slate-500">{t('font_size')}:</span>
+                <LangControl />
+                <div className="flex items-center gap-1">
+                  <button onClick={() => setFontSize('small')} aria-pressed={fontSize === 'small'} className={`w-10 h-10 rounded-lg font-bold ${fontSize === 'small' ? 'bg-[var(--color-info)] text-white' : 'bg-slate-100 text-slate-700'}`}>A-</button>
+                  <button onClick={() => setFontSize('base')} aria-pressed={fontSize === 'base'} className={`w-10 h-10 rounded-lg font-bold ${fontSize === 'base' ? 'bg-[var(--color-info)] text-white' : 'bg-slate-100 text-slate-700'}`}>A</button>
+                  <button onClick={() => setFontSize('large')} aria-pressed={fontSize === 'large'} className={`w-10 h-10 rounded-lg font-bold ${fontSize === 'large' ? 'bg-[var(--color-info)] text-white' : 'bg-slate-100 text-slate-700'}`}>A+</button>
+                </div>
+                <ReadAloud />
+              </div>
             </div>
           )}
+        </div>
+
         <div className="tricolor-strip">
           <div className="tricolor-saffron"></div>
           <div className="tricolor-white"></div>
