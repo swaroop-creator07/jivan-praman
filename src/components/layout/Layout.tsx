@@ -55,7 +55,7 @@ export const Layout: React.FC = () => {
         {ariaMessage}
       </div>
       <header className="app-header sticky top-0 z-50 bg-white shadow-sm">
-        <div className="max-w-[1100px] mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between gap-4">
+        <div className="w-full px-4 sm:px-8 lg:px-12 h-20 flex items-center justify-between gap-6">
           {/* Branding (left) */}
           <Link to="/" className="flex items-center gap-3 min-w-0" onClick={() => setMobileMenuOpen(false)}>
             <span className="bg-[var(--color-primary)] text-black text-[11px] font-bold uppercase tracking-widest px-3 py-2 rounded">Prototype</span>
