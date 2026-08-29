@@ -40,6 +40,7 @@ export default function DownloadDLC() {
           <label htmlFor="pramaanId" className="block text-sm font-bold text-slate-900 mb-2">
             Enter your Pramaan ID
           </label>
+          <p className="text-sm text-slate-500 mb-1">{t('gen_demo_number')}</p>
           <input
             id="pramaanId"
             type="text"

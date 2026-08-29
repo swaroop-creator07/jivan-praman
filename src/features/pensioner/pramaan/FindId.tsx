@@ -80,6 +80,7 @@ export default function FindPramaanId() {
             <label htmlFor="aadhaar" className="block text-sm font-bold text-slate-900 mb-2">
               Enter your Aadhaar Number
             </label>
+            <p className="text-sm text-slate-500 mb-1">{t('gen_demo_number')}</p>
             <input
               id="aadhaar"
               type="text"
