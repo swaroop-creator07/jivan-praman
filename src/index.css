@@ -76,6 +76,9 @@
   button, input, select, textarea, .ui-text, nav {
     font-family: var(--font-ui);
   }
+  .app-header, .app-header nav, .app-header button, .app-header select, .app-header a, .app-header label, .app-header span {
+    font-family: var(--font-serif);
+  }
   *:focus-visible {
     outline: 3px solid var(--color-info) !important;
     outline-offset: 2px !important;

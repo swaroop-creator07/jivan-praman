@@ -38,7 +38,7 @@ export function ReadAloud() {
       className="inline-flex items-center justify-center gap-2 rounded-lg border border-[var(--color-border)] bg-white px-3 py-2 text-sm font-bold text-[var(--color-info)] hover:bg-slate-100"
     >
       {speaking ? <VolumeX className="w-5 h-5" aria-hidden="true" /> : <Volume2 className="w-5 h-5" aria-hidden="true" />}
-      <span className="hidden sm:inline">{speaking ? t('read_aloud_stop') : t('read_aloud')}</span>
+      <span>{speaking ? t('read_aloud_stop') : t('read_aloud')}</span>
     </button>
   );
 }
