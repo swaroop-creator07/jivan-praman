@@ -188,7 +188,7 @@ export default function GeneratePramaan() {
     { value: 'disability', labelKey: 'pen_disability' },
     { value: 'commuted', labelKey: 'pen_commuted' },
   ];
-  const countries = [{ value: 'India', labelKey: 'other' }, { value: 'Other', labelKey: 'other' }];
+  const countries = [{ value: 'India', labelKey: 'country_india' }, { value: 'Other', labelKey: 'other' }];
   const yesNo = [{ value: 'no', labelKey: 'no' }, { value: 'yes', labelKey: 'yes' }];
 
   const FIELDS: FieldDef[] = [
@@ -401,6 +401,18 @@ export default function GeneratePramaan() {
     const val = pensioner[field.key];
     const set = (v: string) => setPensioner((p) => ({ ...p, [field.key]: v }));
     if (field.type === 'select') {
+      if (field.options!.length === 2) {
+        return (
+          <div className="flex flex-wrap gap-3" role="radiogroup" aria-label={t(field.labelKey)}>
+            {field.options!.map((o) => (
+              <label key={o.value} className={`flex items-center gap-2 px-4 py-3 rounded-lg border-2 cursor-pointer font-bold ${val === o.value ? 'border-[var(--color-info)] bg-[var(--color-info)]/5 text-[var(--color-info)]' : 'border-slate-300 text-slate-700'}`}>
+                <input type="radio" name={`f-${field.key}`} value={o.value} checked={val === o.value} onChange={(e) => set(e.target.value)} className="w-5 h-5 accent-[var(--color-info)]" />
+                {t(o.labelKey)}
+              </label>
+            ))}
+          </div>
+        );
+      }
       return (
         <select id={`f-${field.key}`} value={val} onChange={(e) => set(e.target.value)} className={inputCls}>
           <option value="">—</option>

@@ -1,4 +1,4 @@
-export const translations = {
+﻿export const translations = {
   en: {
     home: 'Home',
     pramaan: 'Jeevan Pramaan',
@@ -178,6 +178,7 @@ export const translations = {
     gen_pda_help: 'The bank or post office that actually pays your pension.',
     gen_country: 'Country',
     gen_country_help: 'Country of your current residence.',
+    country_india: 'India',
     gen_state: 'State',
     gen_state_help: 'State as recorded in your pension file.',
     gen_remarried: 'Remarried?',
@@ -462,6 +463,7 @@ export const translations = {
     gen_pda: 'पेंशन वितरण एजेंसी',
     gen_pda_help: 'वह बैंक या डाकघर जो वास्तव में आपकी पेंशन का भुगतान करता है।',
     gen_country: 'देश',
+    country_india: 'भारत',
     gen_country_help: 'आपके वर्तमान निवास का देश।',
     gen_state: 'राज्य',
     gen_state_help: 'आपकी पेंशन फ़ाइल में दर्ज राज्य।',
