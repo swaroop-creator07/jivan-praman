@@ -107,8 +107,6 @@ export default function PensionerDashboard() {
         </div>
       </div>
 
-      <ReminderStub />
-
       {(latestDlc?.status === 'Rejected' || (hasHeldPayment && !isDlcValidOrProcessing)) && (
         <div className="bg-white border border-[var(--color-danger)]/30 rounded-lg p-6 text-left">
           <h3 className="text-left">{t('dash_what_wrong')}</h3>
@@ -147,6 +145,8 @@ export default function PensionerDashboard() {
           ))}
         </div>
       </div>
+
+      <ReminderStub />
     </div>
   );
 }
